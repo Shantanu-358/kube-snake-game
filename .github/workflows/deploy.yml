@@ -1,0 +1,53 @@
+name: Build & Deploy
+
+#The Trigger
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+
+jobs:
+  build-and-deploy:
+    #The runner
+    runs-on: ubuntu-latest
+    
+    steps:
+    #Pre-built actions
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      #Advanced docker layer caching
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/kube-snake-game:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: SSH into EC2 and trigger Kubernetes Rollout
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_PUBLIC_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # 1. Update the running k8s deployment with the new image tag
+          kubectl set image deployment/snake-game-deployment snake-game=${{ secrets.DOCKERHUB_USERNAME }}/kube-snake-game:${{ github.sha }} --record
+
+          # 2. Monitor the rollout until it completes successfully
+          kubectl rollout status deployment/snake-game-deployment
+          
+        
