@@ -1,0 +1,33 @@
+# ==========================================
+# Terraform Local Files & State (DO NOT COMMIT)
+# ==========================================
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate
+*.tfstate.backup
+
+# Ignore local variable secret definitions if you create them later
+*.tfvars
+*.tfvars.json
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ==========================================
+# Security & Private Keys
+# ==========================================
+# If you ever download your AWS .pem private key into this folder, this stops it from leaking
+*.pem
+*.key
+*.id_rsa
+
+# ==========================================
+# Operating System Clutter
+# ==========================================
+.DS_Store
+Thumbs.db
+.local/
