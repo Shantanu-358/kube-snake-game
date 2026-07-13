@@ -281,6 +281,11 @@ function exitToMenu() {
     // Transition Screens
     gameScreen.classList.remove('active');
     startScreen.classList.add('active');
+
+    // Notify parent catalog if loaded inside an iframe
+    if (window.parent && window !== window.parent) {
+        window.parent.postMessage({ type: 'exit-game' }, '*');
+    }
 }
 
 // Initialize Game Engine State
@@ -800,3 +805,17 @@ function updateScoreUI() {
 
 // Initial draw showing empty state grid
 draw();
+
+// Defensive Resource Teardown on Unload to prevent Memory Leaks
+window.addEventListener('unload', () => {
+    if (gameLoopTimeout) {
+        clearTimeout(gameLoopTimeout);
+        gameLoopTimeout = null;
+    }
+    if (sounds.ctx) {
+        try {
+            sounds.ctx.close();
+        } catch(e) {}
+        sounds.ctx = null;
+    }
+});

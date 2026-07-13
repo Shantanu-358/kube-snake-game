@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Snake Arena | DevOps Static Web App</title>
-    <meta name="description" content="A modern, high-fidelity classic Snake game web app for a DevOps Kubernetes portfolio.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameHub Arcade | Scalable Multi-Game Hub</title>
+    <meta name="description" content="A premium, retro-futuristic arcade game catalog hub featuring HTML5 games.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,116 +12,89 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="glass-container">
-        
-        <!-- ================= START SCREEN ================= -->
-        <div id="startScreen" class="screen active">
-            <header class="start-header">
-                <h1 class="logo-text">SNAKE ARENA</h1>
-                <p class="subtitle">Select configuration to initialize</p>
-            </header>
-
-            <div class="setup-panel">
-                <div class="control-row">
-                    <label for="difficultySelect">Speed Profile</label>
-                    <div class="select-wrapper">
-                        <select id="difficultySelect">
-                            <option value="easy">Easy (Slow)</option>
-                            <option value="medium" selected>Medium (Standard)</option>
-                            <option value="hard">Hard (Fast)</option>
-                        </select>
-                    </div>
+    <div class="container">
+        <!-- ================= HEADER ================= -->
+        <header>
+            <h1 class="logo-text">GameHub Arcade</h1>
+            <p class="subtitle">Select cabinet to initialize system</p>
+            <div class="hub-stats">
+                <div class="status-badge">
+                    <span class="dot pulse"></span>
+                    <span>SYSTEM ONLINE</span>
                 </div>
-                
-                <div class="control-row">
-                    <label for="modeSelect">Arena Type</label>
-                    <div class="select-wrapper">
-                        <select id="modeSelect">
-                            <option value="classic" selected>Classic (Deadly Walls)</option>
-                            <option value="obstacles">Obstacles (Barriers)</option>
-                            <option value="portal">Portal (Wraparound)</option>
-                        </select>
-                    </div>
+                <div class="status-badge">
+                    <span>CABINETS: <span class="highlight" style="color: var(--neon-cyan);">1/2 RUNNING</span></span>
                 </div>
-
-                <button id="startButton" class="btn primary-btn launch-btn">LAUNCH ENGINE</button>
+                <div class="status-badge">
+                    <span>PLAYERS ACTIVE: <span class="highlight" style="color: var(--neon-purple);">1,337</span></span>
+                </div>
             </div>
-            
-            <footer class="start-footer">
-                <p class="devops-tag">Served statically using Nginx Alpine. Perfect for containerized portfolio projects.</p>
-            </footer>
-        </div>
+        </header>
 
-        <!-- ================= GAME SCREEN ================= -->
-        <div id="gameScreen" class="screen">
-            <header>
-                <h1 id="app-title">RETRO SNAKE ARENA</h1>
-                <p class="subtitle">Game Active | Engine Online</p>
-            </header>
-
-            <main class="game-layout">
-                <!-- Score & Stats Bar -->
-                <div class="stats-panel">
-                    <div class="stat-box">
-                        <span class="stat-label">SCORE</span>
-                        <span id="score-val" class="stat-value">000</span>
+        <!-- ================= GAMES GRID ================= -->
+        <main class="games-grid">
+            <!-- Snake Game Card -->
+            <article class="game-card" id="card-snake" data-game-url="games/snake/" data-game-title="Snake Arena">
+                <div class="card-media">
+                    <div class="badge-container">
+                        <span class="tag-badge cyan">Arcade</span>
+                        <span class="tag-badge pink">Retro</span>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-label">HIGH SCORE</span>
-                        <span id="high-val" class="stat-value">000</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-label">SPEED</span>
-                        <span id="speed-indicator" class="stat-value">MEDIUM</span>
-                    </div>
+                    <img src="assets/snake_card.png" alt="Snake Arena Artwork">
                 </div>
-
-                <!-- Canvas Container -->
-                <div class="canvas-wrapper">
-                    <canvas id="gameCanvas" width="400" height="400"></canvas>
-                    
-                    <!-- Game Over Overlay -->
-                    <div id="gameOverOverlay" class="canvas-overlay">
-                        <div class="overlay-content">
-                            <h2 class="danger-text">SYSTEM FAILURE</h2>
-                            <p class="game-over-reason">Crash Loop BackOff: Wall Collision</p>
-                            <div class="final-score-box">
-                                <span>FINAL SCORE</span>
-                                <span id="final-score-val">000</span>
-                            </div>
-                            <button id="restartButton" class="btn primary-btn">REDEPLOY ENGINE</button>
-                        </div>
+                <div class="card-details">
+                    <h2 class="game-title">Snake Arena</h2>
+                    <p class="game-desc">High-speed retro grid crawler with speed profiles, obstacles, and wraparound portal modes. Powered by a Web Audio synthesizer.</p>
+                    <div class="card-stats">
+                        <span class="stat-item">RATING: <span class="highlight">4.8 ★</span></span>
+                        <span class="stat-item">STATUS: <span class="highlight" style="color: var(--neon-green);">ACTIVE</span></span>
                     </div>
+                    <button class="btn-launch">Launch Cabinet</button>
+                </div>
+            </article>
 
-                    <!-- Pause Overlay -->
-                    <div id="pauseOverlay" class="canvas-overlay">
-                        <div class="overlay-content">
-                            <h2>PAUSED</h2>
-                            <p>Game engine suspended.</p>
-                            <button id="resumeButton" class="btn primary-btn">RESUME ENGINE</button>
-                        </div>
+            <!-- Moto Rush Game Card -->
+            <article class="game-card" id="card-motorush" data-game-url="games/moto-rush/" data-game-title="Moto Rush">
+                <div class="card-media">
+                    <div class="badge-container">
+                        <span class="tag-badge orange">Racing</span>
+                        <span class="tag-badge pink">Brawler</span>
                     </div>
+                    <img src="assets/motorush_card.png" alt="Moto Rush Artwork">
                 </div>
-
-                <!-- Controls Panel -->
-                <div class="game-controls">
-                    <button id="pauseBtn" class="btn secondary-btn">Pause (Space)</button>
-                    <button id="muteBtn" class="btn secondary-btn">Mute Sound</button>
-                    <button id="exitBtn" class="btn secondary-btn danger-btn">Exit to Menu</button>
+                <div class="card-details">
+                    <h2 class="game-title">Moto Rush</h2>
+                    <p class="game-desc">A retro road rash brawler. Trade punches with rival gangs and tear through neon cyberpunk highways. Reach the finish line!</p>
+                    <div class="card-stats">
+                        <span class="stat-item">RATING: <span class="highlight">4.9 ★</span></span>
+                        <span class="stat-item">STATUS: <span class="highlight" style="color: var(--neon-green);">ACTIVE</span></span>
+                    </div>
+                    <button class="btn-launch">Launch Cabinet</button>
                 </div>
-            </main>
-
-            <footer>
-                <div class="keyboard-guide">
-                    <p class="desktop-controls"><strong>Keyboard:</strong> Use <span class="key">▲</span> <span class="key">▼</span> <span class="key">◀</span> <span class="key">▶</span> / <span class="key">WASD</span>. <span class="key">Spacebar</span> to Pause.</p>
-                    <p class="mobile-controls"><strong>Mobile:</strong> Swipe in the direction you want to turn.</p>
-                </div>
-                <p class="devops-tag">High-speed rendering & Web Audio synthesizer.</p>
-            </footer>
-        </div>
-
+            </article>
+        </main>
     </div>
-    
-    <script src="game.js"></script>
+
+    <!-- ================= FULLSCREEN GAME OVERLAY ================= -->
+    <div id="gameOverlay" class="game-overlay">
+        <div class="hud-bar">
+            <div class="hud-title">
+                <span id="hudGameName">GAME ENGINE</span>
+                <span id="hudGameStatus">VM ACTIVE</span>
+            </div>
+            <button id="btnCloseOverlay" class="btn-close">
+                ◀ BACK TO CATALOG
+            </button>
+        </div>
+        <div class="iframe-container">
+            <div id="iframeLoader" class="iframe-loader">
+                <div class="spinner"></div>
+                <span>Initializing Game Engine VM...</span>
+            </div>
+            <iframe id="gameIframe" class="game-iframe" src="" allow="autoplay"></iframe>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
 </body>
 </html>

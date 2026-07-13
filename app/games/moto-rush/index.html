@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moto Rush | Cyberpunk Road Fighter</title>
+    <meta name="description" content="Retro-futuristic motorcycle brawler inspired by Road Rash. Built with HTML5 Canvas.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <!-- Canvas Layer -->
+        <canvas id="gameCanvas" width="800" height="480"></canvas>
+
+        <!-- ================= START SCREEN OVERLAY ================= -->
+        <div id="startScreen" class="overlay active">
+            <div class="overlay-content">
+                <h1 class="logo-text">MOTO RUSH</h1>
+                <p class="subtitle">NEON ROAD FIGHTER</p>
+                
+                <div class="instructions">
+                    <p>🏍️ <strong>Steer:</strong> Left/Right Arrows or A/D</p>
+                    <p>⚡ <strong>Accel:</strong> Up Arrow / W | 🛑 <strong>Brake:</strong> Down Arrow / S</p>
+                    <p>👊 <strong>Combat:</strong> Spacebar or X (Punch rivals when close!)</p>
+                </div>
+
+                <button id="btnStart" class="btn primary-btn">START ENGINE</button>
+            </div>
+        </div>
+
+        <!-- ================= GAME OVER OVERLAY ================= -->
+        <div id="gameOverScreen" class="overlay">
+            <div class="overlay-content">
+                <h2 class="danger-text">BIKE WRECKED</h2>
+                <p class="stats-report">100% Critical Chassis Damage</p>
+                <div class="score-box">
+                    <span>DISTANCE COVERED</span>
+                    <span id="failDistance" class="score-val">0m</span>
+                </div>
+                <button id="btnRestartFail" class="btn primary-btn">REDEPLOY BIKER</button>
+            </div>
+        </div>
+
+        <!-- ================= VICTORY OVERLAY ================= -->
+        <div id="victoryScreen" class="overlay">
+            <div class="overlay-content">
+                <h2 class="success-text">VICTORY</h2>
+                <p class="stats-report">Finish Line Crossed! Rivals Defeated!</p>
+                <div class="score-box">
+                    <span>FINAL RANK</span>
+                    <span id="winRank" class="score-val">1st</span>
+                </div>
+                <button id="btnRestartWin" class="btn primary-btn">RACE AGAIN</button>
+            </div>
+        </div>
+
+        <!-- ================= MOBILE VIRTUAL GAMEPAD ================= -->
+        <div class="mobile-controls">
+            <!-- Left Side D-Pad -->
+            <div class="dpad">
+                <button id="btnLeft" class="gamepad-btn steer-btn">◀</button>
+                <button id="btnRight" class="gamepad-btn steer-btn">▶</button>
+            </div>
+            
+            <!-- Right Side Action Buttons -->
+            <div class="actions">
+                <button id="btnPunch" class="gamepad-btn action-btn punch-btn">👊 PUNCH</button>
+                <div class="speed-btns">
+                    <button id="btnBrake" class="gamepad-btn speed-btn brake-btn">🛑 BRAKE</button>
+                    <button id="btnGas" class="gamepad-btn speed-btn gas-btn">⚡ GAS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notify main frame if loaded directly -->
+    <div class="standalone-hud">
+        <button id="btnStandaloneBack" class="btn secondary-btn" style="display: none;">◀ BACK TO CATALOG</button>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        // If not running in iframe, display the standalone back button (e.g. if loaded directly)
+        if (window.parent === window) {
+            const backBtn = document.getElementById('btnStandaloneBack');
+            if (backBtn) {
+                backBtn.style.display = 'block';
+                backBtn.addEventListener('click', () => {
+                    window.location.href = '../../index.html';
+                });
+            }
+        }
+    </script>
+</body>
+</html>
