@@ -37,17 +37,20 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: SSH into EC2 and trigger Kubernetes Rollout
-      uses: appleboy/ssh-action@v1.0.3
+# THE UPGRADED PRODUCTION STEP: No SSH, No Sudo!
+    - name: Authenticate and Trigger Kubernetes Rollout
+      uses: steebchen/kubectl@v3
       with:
-        host: ${{ secrets.EC2_PUBLIC_IP }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          # 1. Update the running k8s deployment with the new image tag
-          kubectl set image deployment/snake-game-deployment snake-game=${{ secrets.DOCKERHUB_USERNAME }}/kube-snake-game:${{ github.sha }} --record
-
-          # 2. Monitor the rollout until it completes successfully
-          kubectl rollout status deployment/snake-game-deployment
+        config: '' # Leaving this blank forces the action to authenticate natively via variables below
+      env:
+        KUBE_URL: ${{ secrets.EC2_PUBLIC_IP }} # Your https://:6443 address
+        KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}   # Your granular RBAC token
+        # In sandbox setups with self-signed cluster certs, skip verification check:
+        KUBE_INSECURE_SKIP_TLS_VERIFY: true 
+      run: |
+        kubectl set image deployment/snake-game-deployment \
+          snake-game=${{ secrets.DOCKERHUB_USERNAME }}/kube-snake-game:${{ github.sha }} --namespace=default
+        
+        kubectl rollout status deployment/snake-game-deployment --namespace=default
           
         
