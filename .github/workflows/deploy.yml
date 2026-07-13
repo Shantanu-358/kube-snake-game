@@ -38,26 +38,28 @@ jobs:
         cache-to: type=gha,mode=max
 
 # THE UPGRADED PRODUCTION STEP: No SSH, No Sudo!
-    # Update the container image using the secure token
-    - name: Deploy New Image via Kubernetes API
-      uses: steebchen/kubectl@v3
+# Install the official native kubectl CLI binary on the GitHub Runner
+    - name: Install kubectl CLI
+      uses: azure/setup-kubectl@v4
       with:
-        config: '' # Forces native variable authentication
-        command: set image deployment/snake-game-deployment snake-game=${{ secrets.DOCKERHUB_USERNAME }}/kube-snake-game:${{ github.sha }} --namespace=default
-      env:
-        KUBE_URL: ${{ secrets.EC2_PUBLIC_IP }}
-        KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
-        KUBE_INSECURE_SKIP_TLS_VERIFY: true
+        version: 'latest'
 
-    # Watch the rolling update to ensure it succeeds
-    - name: Verify Deployment Rollout Status
-      uses: steebchen/kubectl@v3
-      with:
-        config: ''
-        command: rollout status deployment/snake-game-deployment --namespace=default
-      env:
-        KUBE_URL: ${{ secrets.EC2_PUBLIC_IP }}
-        KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
-        KUBE_INSECURE_SKIP_TLS_VERIFY: true
+# Direct API deployment using native command line flags
+    - name: Deploy and Verify via Kubernetes API
+      run: |
+            # 1. Patch the deployment with the new image tag
+            kubectl set image deployment/snake-game-deployment \
+              snake-game=${{ secrets.DOCKERHUB_USERNAME }}/kube-snake-game:${{ github.sha }} \
+              --namespace=default \
+              --server="${{ secrets.EC2_PUBLIC_IP }}" \
+              --token="${{ secrets.KUBE_TOKEN }}" \
+              --insecure-skip-tls-verify=true
+            
+            # 2. Watch the status of the rolling update
+            kubectl rollout status deployment/snake-game-deployment \
+              --namespace=default \
+              --server="${{ secrets.EC2_PUBLIC_IP }}" \
+              --token="${{ secrets.KUBE_TOKEN }}" \
+              --insecure-skip-tls-verify=true
           
         
