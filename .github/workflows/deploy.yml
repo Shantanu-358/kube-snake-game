@@ -38,19 +38,26 @@ jobs:
         cache-to: type=gha,mode=max
 
 # THE UPGRADED PRODUCTION STEP: No SSH, No Sudo!
-    - name: Authenticate and Trigger Kubernetes Rollout
+    # Update the container image using the secure token
+    - name: Deploy New Image via Kubernetes API
       uses: steebchen/kubectl@v3
       with:
-        config: '' # Leaving this blank forces the action to authenticate natively via variables below
+        config: '' # Forces native variable authentication
+        command: set image deployment/snake-game-deployment snake-game=${{ secrets.DOCKERHUB_USERNAME }}/snake-game:${{ github.sha }} --namespace=default
       env:
-        KUBE_URL: ${{ secrets.EC2_PUBLIC_IP }} # Your https://:6443 address
-        KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}   # Your granular RBAC token
-        # In sandbox setups with self-signed cluster certs, skip verification check:
-        KUBE_INSECURE_SKIP_TLS_VERIFY: true 
-      run: |
-        kubectl set image deployment/snake-game-deployment \
-          snake-game=${{ secrets.DOCKERHUB_USERNAME }}/kube-snake-game:${{ github.sha }} --namespace=default
-        
-        kubectl rollout status deployment/snake-game-deployment --namespace=default
+        KUBE_URL: ${{ secrets.EC2_PUBLIC_IP }}
+        KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+        KUBE_INSECURE_SKIP_TLS_VERIFY: true
+
+    # Watch the rolling update to ensure it succeeds
+    - name: Verify Deployment Rollout Status
+      uses: steebchen/kubectl@v3
+      with:
+        config: ''
+        command: rollout status deployment/snake-game-deployment --namespace=default
+      env:
+        KUBE_URL: ${{ secrets.EC2_PUBLIC_IP }}
+        KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+        KUBE_INSECURE_SKIP_TLS_VERIFY: true
           
         
