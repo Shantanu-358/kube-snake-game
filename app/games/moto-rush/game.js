@@ -164,6 +164,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
+    // Dynamic resize handler and scaling helpers
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        render(); // trigger immediate redraw on resize
+    }
+
+    function getPlayerVisualZOffset() {
+        const centerY = canvas.height / 2 + 60;
+        const playerY = canvas.height - 40;
+        return (cameraDepth * cameraHeight * centerY) / (playerY - centerY);
+    }
+
+    function getWidthScaleFactor() {
+        return canvas.width / 800;
+    }
+
     // UI overlays
     const startScreen = document.getElementById('startScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
@@ -213,6 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Keyboard bindings
     window.addEventListener('keydown', (e) => {
         if (gameState !== 'RUNNING') return;
+        if (e.key === ' ' || e.key === 'Spacebar') {
+            e.preventDefault();
+        }
         switch(e.key.toLowerCase()) {
             case 'arrowleft':
             case 'a':
@@ -233,6 +253,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.addEventListener('keyup', (e) => {
+        if (e.key === ' ' || e.key === 'Spacebar') {
+            e.preventDefault();
+        }
         switch(e.key.toLowerCase()) {
             case 'arrowleft':
             case 'a':
@@ -260,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cameraDepth = 0.85;  // scale factor / FOV depth
     const CELL_COUNT = 2000;   // track total segments (400,000 units)
     const finishSeg = 1900;    // Finish Line Segment Index
+    const playerVisualZOffset = 1820; // virtual visual distance of the player from camera
 
     let segments = [];
     let skylineOffset = 0;     // Horizon background scroll
@@ -285,8 +309,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Striping colors alternate
             const color = (Math.floor(i / 3) % 2 === 0) 
-                ? { road: '#181b22', grass: '#052912', rumble: '#ff007f', line: '#ffffff' }  // dark road, pink rumble
-                : { road: '#15171e', grass: '#083217', rumble: '#00f0ff', line: 'transparent' }; // light road, cyan rumble
+                ? { road: '#3a3a3a', grass: '#1e3f20', rumble: '#ff007f', line: '#ffffff' }  // dark road, pink rumble
+                : { road: '#424242', grass: '#274e2a', rumble: '#00f0ff', line: 'transparent' }; // light road, cyan rumble
 
             // Add finish checkerboard at finish segment
             if (i >= finishSeg && i < finishSeg + 8) {
@@ -387,10 +411,10 @@ document.addEventListener('DOMContentLoaded', () => {
         x: 0,            // -1 to 1 lane coordinates
         z: 0,            // world distance along track
         speed: 0,        // units per frame
-        maxSpeed: 280,   // max velocity
-        accel: 3.5,
-        brake: 8.5,
-        friction: 1.2,
+        maxSpeed: 440,   // max velocity
+        accel: 5.5,
+        brake: 12.0,
+        friction: 1.8,
         damage: 0,       // 0 to 100
         health: 100,     // redundant display value
         steerSpeed: 0.045,
@@ -404,13 +428,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let rivals = [];
     let cars = [];
     let gameState = 'START'; // START, RUNNING, GAME_OVER, VICTORY
+    let countdownTimer = 0;
 
     function spawnEntities() {
         rivals = [
-            { id: 1, name: "Razor", x: -0.5, z: 2000, speed: 180, maxSpeed: 230, color: '#9d4edd', health: 100, crashed: false, crashTimer: 0, targetX: -0.5, punchCooldown: 0 },
-            { id: 2, name: "Viper", x: 0.5, z: 5000, speed: 190, maxSpeed: 240, color: '#e63946', health: 100, crashed: false, crashTimer: 0, targetX: 0.5, punchCooldown: 0 },
-            { id: 3, name: "Buster", x: -0.3, z: 9000, speed: 200, maxSpeed: 250, color: '#ffb703', health: 100, crashed: false, crashTimer: 0, targetX: -0.3, punchCooldown: 0 },
-            { id: 4, name: "Ghost", x: 0.3, z: 13000, speed: 210, maxSpeed: 260, color: '#a2d2ff', health: 100, crashed: false, crashTimer: 0, targetX: 0.3, punchCooldown: 0 }
+            { id: 1, name: "Razor", x: -0.5, z: 2000, speed: 0, maxSpeed: 370, accel: 2.8, color: '#9d4edd', health: 100, crashed: false, crashTimer: 0, targetX: -0.5, punchCooldown: 0 },
+            { id: 2, name: "Viper", x: 0.5, z: 5000, speed: 0, maxSpeed: 385, accel: 3.1, color: '#e63946', health: 100, crashed: false, crashTimer: 0, targetX: 0.5, punchCooldown: 0 },
+            { id: 3, name: "Buster", x: -0.3, z: 9000, speed: 0, maxSpeed: 400, accel: 3.4, color: '#ffb703', health: 100, crashed: false, crashTimer: 0, targetX: -0.3, punchCooldown: 0 },
+            { id: 4, name: "Ghost", x: 0.3, z: 13000, speed: 0, maxSpeed: 415, accel: 3.7, color: '#a2d2ff', health: 100, crashed: false, crashTimer: 0, targetX: 0.3, punchCooldown: 0 }
         ];
 
         cars = [];
@@ -419,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cars.push({
                 x: (i % 2 === 0 ? 0.45 : -0.45),
                 z: i * 14000 + Math.random() * 2000,
-                speed: 80 + Math.random() * 40,
+                speed: 130 + Math.random() * 60,
                 color: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#ffffff'][i % 5]
             });
         }
@@ -427,6 +452,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reset loop attributes
     function resetGame() {
+        if (document.activeElement) {
+            try {
+                document.activeElement.blur();
+            } catch(e) {}
+        }
         player.x = 0;
         player.z = 0;
         player.speed = 0;
@@ -446,6 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
         victoryScreen.classList.remove('active');
         
         gameState = 'RUNNING';
+        countdownTimer = 240; // 3s countdown + 1s GO!
         sounds.startEngine();
     }
 
@@ -680,48 +711,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Stars / Skyline background
     function drawSkyline(ctx, width, height) {
-        ctx.fillStyle = '#030509';
+        // Draw linear gradient sky: deep space blue (#0a0a1a) to neon purple/dark magenta horizon (#2d0b3d)
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, height / 2);
+        skyGrad.addColorStop(0, '#0a0a1a');
+        skyGrad.addColorStop(1, '#2d0b3d');
+        ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, width, height / 2);
 
-        // draw cyber stars
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        for (let i = 0; i < 30; i++) {
-            const x = (Math.sin(i * 3824) * 0.5 + 0.5) * width;
-            const y = (Math.cos(i * 9284) * 0.5 + 0.5) * (height / 2);
-            ctx.fillRect(x, y, 2, 2);
+        // Draw randomly generated white/cyan stars with parallax scrolling
+        for (let i = 0; i < 60; i++) {
+            const baseX = (Math.sin(i * 3824) * 0.5 + 0.5) * width * 3;
+            const y = (Math.cos(i * 9284) * 0.5 + 0.5) * (height / 2 - 10);
+            
+            // Scroll stars with parallax (half of skylineOffset speed)
+            const x = (baseX - skylineOffset * 0.5) % (width * 3);
+            const finalX = x < 0 ? x + width * 3 : x;
+            
+            if (finalX < width) {
+                ctx.fillStyle = i % 2 === 0 ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 240, 255, 0.85)';
+                const starSize = (i % 3 === 0) ? 2 : 1;
+                ctx.fillRect(finalX, y, starSize, starSize);
+            }
         }
 
-        // Draw layered background city skyline
-        ctx.fillStyle = '#080a10';
-        const startX = -Math.floor(skylineOffset) % width;
+        // Draw synthwave grid line horizon
+        const horizonY = height / 2;
+        const gridHeight = 60;
+        const gridTopY = horizonY - gridHeight;
 
-        const drawCitySet = (offsetX, fillStyle) => {
-            ctx.fillStyle = fillStyle;
-            let currentX = offsetX;
-            let i = 0;
-            while (currentX < width + 100) {
-                const w = 40 + (Math.sin(i * 200) * 0.5 + 0.5) * 50;
-                const h = 50 + (Math.cos(i * 500) * 0.5 + 0.5) * 90;
-                ctx.fillRect(currentX, height / 2 - h, w, h);
-                currentX += w + 8;
-                i++;
-            }
-        };
+        // Draw horizontal grid lines (getting closer and brighter near horizon)
+        for (let y = gridTopY; y <= horizonY; y += 10) {
+            const alpha = (y - gridTopY) / gridHeight * 0.35;
+            ctx.strokeStyle = `rgba(255, 0, 127, ${alpha})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        }
 
-        drawCitySet(startX - width, '#06080d');
-        drawCitySet(startX, '#06080d');
-        drawCitySet(startX + width, '#06080d');
-
-        // Draw horizon ambient glow
-        const grad = ctx.createLinearGradient(0, height / 2 - 40, 0, height / 2);
-        grad.addColorStop(0, 'transparent');
-        grad.addColorStop(1, 'rgba(157, 78, 221, 0.15)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, height / 2 - 40, width, 40);
+        // Draw perspective grid lines converging to shifting vanishing point
+        const vanishingX = width / 2 - (skylineOffset * 0.8) % 100;
+        const spacing = 40;
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+        for (let xOffset = -width; xOffset < width * 2; xOffset += spacing) {
+            const bottomX = xOffset - (skylineOffset * 0.8) % spacing;
+            ctx.beginPath();
+            ctx.moveTo(vanishingX, horizonY - gridHeight);
+            ctx.lineTo(bottomX, horizonY);
+            ctx.stroke();
+        }
     }
 
     // ================= CORE UPDATE GAME STATE =================
     function updatePhysics() {
+        // Pre-race countdown freeze
+        if (countdownTimer > 0) {
+            countdownTimer--;
+            player.speed = 0;
+            player.steer = 0;
+            rivals.forEach(rival => {
+                rival.speed = 0;
+                rival.steer = 0;
+            });
+            sounds.setEngineRPM(0);
+            return;
+        }
+
         // Find segment representing player position
         const currentSegmentIndex = Math.floor(player.z / segmentLength);
         const playerSegment = segments[currentSegmentIndex % segments.length];
@@ -732,6 +788,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Scroll skyline backdrop horizontally
         skylineOffset += curveOffset * 1.5;
+
+        // Curve centrifugal force calculation
+        const centrifugalForceCoefficient = 0.009; // cut by 70% from 0.03
+        const centrifugalPull = roadCurving * (player.speed / player.maxSpeed) * centrifugalForceCoefficient;
 
         // Player Off-road checks
         const isOnRoad = (player.x >= -1.0 && player.x <= 1.0);
@@ -754,11 +814,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Steer Lean calculation
+        let steerPower = player.steerSpeed * (player.speed / player.maxSpeed + 0.25);
+        if (roadCurving !== 0) {
+            // Add curve compensation to allow fully overcoming centrifugal force
+            steerPower += Math.abs(centrifugalPull) * 1.25;
+        }
+
         if (keys.left && !player.wrecked) {
-            player.x -= player.steerSpeed * (player.speed / player.maxSpeed + 0.25);
+            player.x -= steerPower;
             player.steer = Math.max(-0.25, player.steer - 0.035);
         } else if (keys.right && !player.wrecked) {
-            player.x += player.steerSpeed * (player.speed / player.maxSpeed + 0.25);
+            player.x += steerPower;
             player.steer = Math.min(0.25, player.steer + 0.035);
         } else {
             player.steer *= 0.85; // reset lean
@@ -784,8 +850,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 player.speed = Math.max(0, player.speed - player.friction);
             }
 
-            // Curve centrifugal force pulls player out of roads
-            player.x -= curveOffset * 0.09;
+            // Curve centrifugal force pulls player out of road
+            player.x -= centrifugalPull;
         }
 
         // Advance world Z position
@@ -808,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let closestRival = null;
             let minDist = 400;
             rivals.forEach(r => {
-                const distZ = Math.abs(r.z - player.z);
+                const distZ = Math.abs(r.z - (player.z + getPlayerVisualZOffset()));
                 if (distZ < minDist && !r.crashed) {
                     minDist = distZ;
                     closestRival = r;
@@ -835,11 +901,11 @@ document.addEventListener('DOMContentLoaded', () => {
         cars.forEach(car => {
             car.z += car.speed;
             
-            // Check collision with player
-            const distZ = Math.abs(car.z - player.z);
+            // Check collision with player visual position
+            const distZ = Math.abs(car.z - (player.z + getPlayerVisualZOffset()));
             const distX = Math.abs(car.x - player.x);
             
-            if (distZ < 150 && distX < 0.35 && !player.wrecked) {
+            if (distZ < 180 && distX < 0.25 && !player.wrecked) {
                 // Sparks and trigger wreck
                 triggerPlayerWreck();
                 spawnSparks(canvas.width / 2, canvas.height - 80, '#ef4444', 18);
@@ -857,11 +923,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     rival.z = player.z - 1500; // spawn behind player
                 }
             } else {
-                // Simple AI logic: try to catch up to the player
-                const distZ = rival.z - player.z;
+                // Check collision with civilian traffic cars (AI Collision Logic)
+                let isHit = false;
+                cars.forEach(car => {
+                    const distZ = Math.abs(car.z - rival.z);
+                    const distX = Math.abs(car.x - rival.x);
+                    if (distZ < 180 && distX < 0.25) {
+                        isHit = true;
+                        rival.crashed = true;
+                        rival.crashTimer = 120; // crash recovery time
+                        rival.speed = 0;
+                        sounds.playCrash();
+                    }
+                });
+
+                if (isHit) return; // skip normal AI movement logic for this frame
+
+                // Simple AI logic: try to catch up to the player's visual position
+                const distZ = rival.z - (player.z + getPlayerVisualZOffset());
                 
-                // Accelerate
-                rival.speed = Math.min(rival.maxSpeed, rival.speed + 2.5);
+                // Accelerate using step function
+                rival.speed = Math.min(rival.maxSpeed, rival.speed + (rival.accel || 2.0));
                 rival.z += rival.speed;
 
                 // Move closer to steer near player
@@ -874,7 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (rival.x > rival.targetX) rival.x -= 0.015;
 
                     // AI Combat: if side by side, punch player
-                    if (Math.abs(distZ) < 180 && Math.abs(rival.x - player.x) < 0.45) {
+                    if (Math.abs(distZ) < 180 && Math.abs(rival.x - player.x) < 0.25) {
                         if (rival.punchCooldown <= 0) {
                             rival.punchCooldown = 90; // frames
                             
@@ -941,9 +1023,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate Rank position
         let beatRivals = 0;
         rivals.forEach(r => {
-            if (player.z > r.z) beatRivals++;
+            if (player.z + getPlayerVisualZOffset() > r.z) beatRivals++;
         });
-        const rankIndex = 5 - beatRivals;
+        const rankIndex = rivals.length - beatRivals;
         const ordinal = ["1st", "2nd", "3rd", "4th", "5th"][rankIndex] || "1st";
         
         winRank.textContent = ordinal;
@@ -979,6 +1061,9 @@ document.addEventListener('DOMContentLoaded', () => {
             accumulatedCurveB += seg.curve;
             accumulatedCurveX += accumulatedCurveB;
             
+            // Store the accumulated curve on the segment for back-to-front rendering reference
+            seg.accumulatedCurveX = accumulatedCurveX;
+            
             // Project segment points (endpoints)
             // Offset coordinates relative to horizontal road shifts and vertical hill values
             project(seg.p1, player.x * roadWidth - accumulatedCurveX, cameraHeight + segments[startSegment % segments.length].p1.world.y, player.z, centerX, centerY, canvas.width, canvas.height);
@@ -987,82 +1072,100 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // BACK-TO-FRONT RENDER LAYER: painter's algorithm scans closest to furthest
         // We draw the segments from furthest (z-draw distance) back to closest
-        let maxClipY = canvas.height;
 
         for (let i = Math.min(CELL_COUNT - 1, startSegment + drawDistance - 1); i >= startSegment; i--) {
             const seg = segments[i];
             
-            // Skip non projected segments
-            if (seg.p1.screen.scale === 0 || seg.p2.screen.scale === 0) continue;
-            if (seg.p1.screen.y >= maxClipY) continue; // behind camera
+            // Skip only if the further boundary of the segment is behind the camera
+            if (seg.p2.screen.scale === 0) continue;
+            
+            // We can draw road geometry only if the closer boundary of the segment is in front of the camera
+            const canDrawRoad = seg.p1.screen.scale > 0;
             
             const p1 = seg.p1.screen;
             const p2 = seg.p2.screen;
 
-            // Draw grass polygon
-            ctx.fillStyle = seg.color.grass;
-            ctx.beginPath();
-            ctx.moveTo(0, p2.y);
-            ctx.lineTo(canvas.width, p2.y);
-            ctx.lineTo(canvas.width, p1.y);
-            ctx.lineTo(0, p1.y);
-            ctx.fill();
-
-            // Draw road shoulder rumble strip
-            ctx.fillStyle = seg.color.rumble;
-            ctx.beginPath();
-            ctx.moveTo(p2.x - p2.w * 1.1, p2.y);
-            ctx.lineTo(p2.x + p2.w * 1.1, p2.y);
-            ctx.lineTo(p1.x + p1.w * 1.1, p1.y);
-            ctx.lineTo(p1.x - p1.w * 1.1, p1.y);
-            ctx.fill();
-
-            // Draw main road pavement
-            ctx.fillStyle = seg.color.road;
-            ctx.beginPath();
-            ctx.moveTo(p2.x - p2.w, p2.y);
-            ctx.lineTo(p2.x + p2.w, p2.y);
-            ctx.lineTo(p1.x + p1.w, p1.y);
-            ctx.lineTo(p1.x - p1.w, p1.y);
-            ctx.fill();
-
-            // Draw dashed center white separator line
-            if (seg.color.line !== 'transparent') {
-                ctx.fillStyle = seg.color.line;
+            if (canDrawRoad) {
+                // Draw grass polygon
+                ctx.fillStyle = seg.color.grass;
                 ctx.beginPath();
-                ctx.moveTo(p2.x - p2.w * 0.02, p2.y);
-                ctx.lineTo(p2.x + p2.w * 0.02, p2.y);
-                ctx.lineTo(p1.x + p1.w * 0.02, p1.y);
-                ctx.lineTo(p1.x - p1.w * 0.02, p1.y);
+                ctx.moveTo(0, p2.y);
+                ctx.lineTo(canvas.width, p2.y);
+                ctx.lineTo(canvas.width, p1.y);
+                ctx.lineTo(0, p1.y);
                 ctx.fill();
+
+                // Draw road shoulder rumble strip
+                ctx.fillStyle = seg.color.rumble;
+                ctx.beginPath();
+                ctx.moveTo(p2.x - p2.w * 1.1, p2.y);
+                ctx.lineTo(p2.x + p2.w * 1.1, p2.y);
+                ctx.lineTo(p1.x + p1.w * 1.1, p1.y);
+                ctx.lineTo(p1.x - p1.w * 1.1, p1.y);
+                ctx.fill();
+
+                // Draw main road pavement
+                ctx.fillStyle = seg.color.road;
+                ctx.beginPath();
+                ctx.moveTo(p2.x - p2.w, p2.y);
+                ctx.lineTo(p2.x + p2.w, p2.y);
+                ctx.lineTo(p1.x + p1.w, p1.y);
+                ctx.lineTo(p1.x - p1.w, p1.y);
+                ctx.fill();
+
+                // Draw dashed center white separator line
+                if (seg.color.line !== 'transparent') {
+                    ctx.fillStyle = seg.color.line;
+                    ctx.beginPath();
+                    ctx.moveTo(p2.x - p2.w * 0.02, p2.y);
+                    ctx.lineTo(p2.x + p2.w * 0.02, p2.y);
+                    ctx.lineTo(p1.x + p1.w * 0.02, p1.y);
+                    ctx.lineTo(p1.x - p1.w * 0.02, p1.y);
+                    ctx.fill();
+                }
+
+                // Draw roadside sprites (trees, billboards)
+                if (seg.sprite) {
+                    const spriteX = p1.x + (p1.w * seg.sprite.offset);
+                    const spriteY = p1.y;
+                    const spriteScale = p1.scale * 2000 * getWidthScaleFactor(); // arbitrary multiplier
+                    drawSprite(ctx, spriteX, spriteY, spriteScale, seg.sprite.type, seg.sprite.text);
+                }
             }
 
-            // Draw roadside sprites (trees, billboards)
-            if (seg.sprite) {
-                const spriteX = p1.x + (p1.w * seg.sprite.offset);
-                const spriteY = p1.y;
-                const spriteScale = p1.scale * 1500; // arbitrary multiplier
-                drawSprite(ctx, spriteX, spriteY, spriteScale, seg.sprite.type, seg.sprite.text);
-            }
-
-            // Draw traffic cars situated on this segment
+            // Draw traffic cars situated on this segment (always project using exact Z)
             cars.forEach(car => {
                 const carSeg = Math.floor(car.z / segmentLength);
                 if (carSeg === i) {
-                    const carX = p1.x + (p1.w * car.x);
-                    const carY = p1.y;
-                    const carScale = p1.scale * 800;
+                    const transZ = car.z - player.z;
+                    if (transZ <= 0) return; // behind camera
+                    
+                    const scale = cameraDepth / transZ;
+                    const carScale = scale * 2000 * getWidthScaleFactor();
+                    
+                    const transY = seg.p1.world.y - (cameraHeight + segments[startSegment % segments.length].p1.world.y);
+                    const carY = Math.round(centerY - (scale * transY * centerY));
+                    
+                    const carX = Math.round(centerX + (scale * (seg.accumulatedCurveX + (car.x - player.x) * roadWidth) * centerX));
+                    
                     drawCar(ctx, carX, carY, carScale, car.color);
                 }
             });
 
-            // Draw AI rivals situated on this segment
+            // Draw AI rivals situated on this segment (always project using exact Z)
             rivals.forEach(rival => {
                 const rivalSeg = Math.floor(rival.z / segmentLength);
                 if (rivalSeg === i) {
-                    const rivalX = p1.x + (p1.w * rival.x);
-                    const rivalY = p1.y;
-                    const rivalScale = p1.scale * 800;
+                    const transZ = rival.z - player.z;
+                    if (transZ <= 0) return; // behind camera
+                    
+                    const scale = cameraDepth / transZ;
+                    const rivalScale = scale * 2000 * getWidthScaleFactor();
+                    
+                    const transY = seg.p1.world.y - (cameraHeight + segments[startSegment % segments.length].p1.world.y);
+                    const rivalY = Math.round(centerY - (scale * transY * centerY));
+                    
+                    const rivalX = Math.round(centerX + (scale * (seg.accumulatedCurveX + (rival.x - player.x) * roadWidth) * centerX));
                     
                     let leanAngle = (rival.speed / rival.maxSpeed) * (segments[rivalSeg % segments.length].curve * 0.04);
                     if (rival.crashed) leanAngle = Math.PI / 2; // fallen sideways!
@@ -1071,12 +1174,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            maxClipY = p1.y;
         }
 
         // Draw Player Bike on top (Foreground)
         if (gameState === 'RUNNING' || gameState === 'VICTORY') {
-            const playerScreenScale = cameraDepth / (player.z - (player.z - 240)); // fixed projection distance
+            const playerScreenScale = cameraDepth / getPlayerVisualZOffset(); // fixed projection distance matching screen position
             const playerX = canvas.width / 2; // always centered horizontal
             const playerY = canvas.height - 40;
             
@@ -1089,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            drawRider(ctx, playerX, playerY, playerScreenScale * 750, leanAngle, '#00f0ff', player.punchTimer, player.punchSide);
+            drawRider(ctx, playerX, playerY, playerScreenScale * 2000 * getWidthScaleFactor(), leanAngle, '#00f0ff', player.punchTimer, player.punchSide);
         }
 
         // Draw active sparks
@@ -1147,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Leaderboard Rank position
         let rank = 5;
         rivals.forEach(r => {
-            if (player.z > r.z) rank--;
+            if (player.z + getPlayerVisualZOffset() > r.z) rank--;
         });
         ctx.fillStyle = '#ff9f1c';
         ctx.font = "bold 13px 'JetBrains Mono'";
@@ -1164,6 +1266,33 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.font = "bold 12px 'Outfit'";
             ctx.fillText(`SYSTEM RECOVERY IN PROGRESS... (${Math.ceil(player.wreckTimer / 60)}s)`, canvas.width - 250, canvas.height - 12);
         }
+
+        // Render pre-race countdown overlay
+        if (countdownTimer > 0) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(4, 6, 12, 0.4)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.font = "800 80px 'Outfit'";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Neon cyan glow for text
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00f0ff';
+            
+            let secondsLeft = Math.ceil((countdownTimer - 60) / 60);
+            let text = secondsLeft > 0 ? secondsLeft.toString() : 'GO!';
+            
+            // Choose color based on countdown phase
+            if (secondsLeft === 3) ctx.fillStyle = '#ff3333'; // red
+            else if (secondsLeft === 2) ctx.fillStyle = '#ff9f1c'; // orange
+            else if (secondsLeft === 1) ctx.fillStyle = '#00ff66'; // green
+            else ctx.fillStyle = '#00f0ff'; // cyan (GO!)
+            
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+        }
     }
 
     // ================= LOOP TICK CONDITION =================
@@ -1178,22 +1307,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Bind restart / launch event listeners
-    btnStart.addEventListener('click', () => {
+    btnStart.addEventListener('click', (e) => {
+        if (e && e.target) e.target.blur();
         resetGame();
     });
 
-    btnRestartFail.addEventListener('click', () => {
+    btnRestartFail.addEventListener('click', (e) => {
+        if (e && e.target) e.target.blur();
         resetGame();
     });
 
-    btnRestartWin.addEventListener('click', () => {
+    btnRestartWin.addEventListener('click', (e) => {
+        if (e && e.target) e.target.blur();
         resetGame();
     });
 
     // Run procedural track setup and draw first passive frame
     buildTrack();
     spawnEntities();
-    render();
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
     
     // Start request animation loop
     tick();

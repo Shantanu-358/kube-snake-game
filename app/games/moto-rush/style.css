@@ -42,23 +42,25 @@ body {
 /* --- Game Container Wrapper --- */
 .game-wrapper {
     position: relative;
-    width: 800px;
-    height: 480px;
+    width: 100vw;
+    height: 100vh;
     background: #000;
-    border: 2px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
     overflow: hidden;
-    box-shadow: var(--shadow-heavy);
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 canvas {
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
     display: block;
-    object-fit: contain;
 }
 
 /* --- Overlay Screen Base --- */
